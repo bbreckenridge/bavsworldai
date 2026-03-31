@@ -1,0 +1,28 @@
+# ============================================================
+# sd-webui-netpol.yaml
+#
+# PURPOSE: Allow incoming traffic from Open WebUI and Istio
+# to the Stable Diffusion API.
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sd-webui-allow-internal
+  namespace: ai-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: sd-webui
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: open-webui
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+    ports:
+    - protocol: TCP
+      port: 7860

@@ -1,0 +1,150 @@
+"""
+title: Native ComfyUI Text-to-Video
+author: Antigravity AI
+description: Securely triggers dynamic dual-pass Text-to-Video generations by connecting directly to the ComfyUI API running on the Host.
+version: 2.1.0
+"""
+
+from typing import Any
+from pydantic import BaseModel, Field
+import requests
+import json
+import random
+
+
+class Tools:
+    class Valves(BaseModel):
+        COMFYUI_API_URL: str = Field(
+            default="http://<HOST-IP>:8188/prompt",
+            description="The URL endpoint for the underlying ComfyUI server.",
+        )
+
+    def __init__(self):
+        self.valves = self.Valves()
+
+    def generate_video(self, prompt: str) -> str:
+        """
+        Triggers a high-fidelity video generation on the ComfyUI server.
+        You MUST call this tool whenever the user explicitly requests to generate, create, or animate a video.
+        Do not explain the tool to the user, simply execute it and pass their description into the prompt argument.
+
+        :param prompt: A highly descriptive visual breakdown of what the video should look like.
+        """
+
+        # Dual-pass graph: Text -> Juggernaut-XL -> SVD-XT -> WEBP
+        # We generate a random seed for both pass steps to ensure unique variations
+        seed_img = random.randint(1, 10000000)
+        seed_vid = random.randint(1, 10000000)
+
+        payload = {
+            "client_id": "open-webui-client",
+            "prompt": {
+                "1": {
+                    "class_type": "CheckpointLoaderSimple",
+                    "inputs": {"ckpt_name": "Juggernaut-XL-v9.safetensors"},
+                },
+                "2": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {"text": prompt, "clip": ["1", 1]},
+                },
+                "3": {
+                    "class_type": "CLIPTextEncode",
+                    "inputs": {
+                        "text": "blurry, text, watermark, bad anatomy, deformed",
+                        "clip": ["1", 1],
+                    },
+                },
+                "4": {
+                    "class_type": "EmptyLatentImage",
+                    "inputs": {"width": 1024, "height": 576, "batch_size": 1},
+                },
+                "5": {
+                    "class_type": "KSampler",
+                    "inputs": {
+                        "seed": seed_img,
+                        "steps": 25,
+                        "cfg": 7.0,
+                        "sampler_name": "euler",
+                        "scheduler": "karras",
+                        "denoise": 1.0,
+                        "model": ["1", 0],
+                        "positive": ["2", 0],
+                        "negative": ["3", 0],
+                        "latent_image": ["4", 0],
+                    },
+                },
+                "6": {
+                    "class_type": "VAEDecode",
+                    "inputs": {"samples": ["5", 0], "vae": ["1", 2]},
+                },
+                "7": {
+                    "class_type": "ImageOnlyCheckpointLoader",
+                    "inputs": {"ckpt_name": "svd_xt_1_1.safetensors"},
+                },
+                "8": {
+                    "class_type": "SVD_img2vid_Conditioning",
+                    "inputs": {
+                        "width": 1024,
+                        "height": 576,
+                        "video_frames": 25,
+                        "motion_bucket_id": 127,
+                        "fps": 6,
+                        "augmentation_level": 0.0,
+                        "init_image": ["6", 0],
+                        "vae": ["7", 2],
+                    },
+                },
+                "9": {
+                    "class_type": "VideoLinearCFGGuidance",
+                    "inputs": {"min_cfg": 1.0, "model": ["7", 0]},
+                },
+                "10": {
+                    "class_type": "KSampler",
+                    "inputs": {
+                        "seed": seed_vid,
+                        "steps": 20,
+                        "cfg": 2.5,
+                        "sampler_name": "euler",
+                        "scheduler": "karras",
+                        "denoise": 1.0,
+                        "model": ["9", 0],
+                        "positive": ["8", 0],
+                        "negative": ["8", 1],
+                        "latent_image": ["8", 2],
+                    },
+                },
+                "11": {
+                    "class_type": "VAEDecode",
+                    "inputs": {"samples": ["10", 0], "vae": ["7", 2]},
+                },
+                "12": {
+                    "class_type": "SaveAnimatedWEBP",
+                    "inputs": {
+                        "filename_prefix": "OpenWebUI_Video",
+                        "fps": 6,
+                        "lossless": False,
+                        "quality": 85,
+                        "method": "default",
+                        "images": ["11", 0],
+                    },
+                },
+            },
+        }
+
+        try:
+            response = requests.post(
+                self.valves.COMFYUI_API_URL, json=payload, timeout=10
+            )
+
+            if response.status_code == 200:
+                return (
+                    f"**Video successfully queued in ComfyUI! 🎬**\n\n"
+                    f"The server is cleanly generating your 25-frame cinematic video sequence in the background.\n"
+                    f"When it finishes caching, the animated file will be saved perfectly to your Host at:\n"
+                    f"`D:\\Program Files\\ComfyUI\\output\\`"
+                )
+            else:
+                return f"**Failed to submit ComfyUI job.** API returned status code {response.status_code}. Response: {response.text}"
+
+        except requests.exceptions.RequestException as e:
+            return f"**Connection Error:** Failed to reach ComfyUI at {self.valves.COMFYUI_API_URL}. Is the service running? Error: {str(e)}"

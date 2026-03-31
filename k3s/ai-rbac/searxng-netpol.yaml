@@ -1,0 +1,28 @@
+# ============================================================
+# searxng-netpol.yaml
+#
+# PURPOSE: Allow incoming traffic from internal cluster clients
+# (like Open WebUI) to the SearXNG pod.
+# ============================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: searxng-allow-internal
+  namespace: ai-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: searxng
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: open-webui
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+    ports:
+    - protocol: TCP
+      port: 8080

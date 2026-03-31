@@ -1,0 +1,105 @@
+# ============================================================
+# ai-rbac.yaml
+#
+# PURPOSE: Zero-trust RBAC configuration for the MCP server.
+#
+# GRANTS:
+# 1. Full deployment rights (Deployments, Services, Ingress,
+#    ConfigMaps, Secrets, Pods) EXCLUSIVELY within the
+#    'ai-sandbox' namespace.
+# 2. Global Read-Only access to Pods and their Logs for
+#    troubleshooting (e.g., Keycloak logs elsewhere in k3s).
+#
+# HOW TO USE THE TOKEN:
+# Once applied, extract the long-lived token for the MCP server:
+# kubectl create token jarvis-mcp -n ai-sandbox --duration=8760h
+# ============================================================
+
+---
+# 1. The Service Account the AI/MCP will authenticate as
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jarvis-mcp
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: jarvis-mcp
+    homelab.bavs.io/security-zone: zero-trust
+
+---
+# 2. Local Role: Full deployment rights restricted to ai-sandbox
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jarvis-deployer
+  namespace: ai-sandbox
+  labels:
+    homelab.bavs.io/security-zone: zero-trust
+rules:
+  # Core resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Apps resources (Deployments, StatefulSets)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Networking resources (Ingress, NetworkPolicies)
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Batch resources (Jobs, CronJobs)
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# 3. Bind the local Role to the AI's ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jarvis-deployer-binding
+  namespace: ai-sandbox
+subjects:
+  - kind: ServiceAccount
+    name: jarvis-mcp
+    namespace: ai-sandbox
+roleRef:
+  kind: Role
+  name: jarvis-deployer
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# 4. ClusterRole: Read-only access to Pod logs globally
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jarvis-readonly-logs
+  labels:
+    homelab.bavs.io/security-zone: zero-trust
+rules:
+  # Allow viewing pods, their logs, and events across all namespaces
+  # This serves the "troubleshooting k3s/Keycloak logs" requirement
+  # WARNING: Keycloak uses 'existingSecret' to prevent password rotation on upgrades.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  # Read-only access to nodes to understand hardware constraints
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+
+---
+# 5. Bind the global log-reading ClusterRole to the AI's ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jarvis-readonly-logs-binding
+subjects:
+  - kind: ServiceAccount
+    name: jarvis-mcp
+    namespace: ai-sandbox
+roleRef:
+  kind: ClusterRole
+  name: jarvis-readonly-logs
+  apiGroup: rbac.authorization.k8s.io

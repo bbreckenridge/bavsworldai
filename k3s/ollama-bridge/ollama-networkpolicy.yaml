@@ -1,0 +1,120 @@
+# ============================================================
+# ollama-networkpolicy.yaml
+#
+# PURPOSE: Zero-trust NetworkPolicy that enforces two rules:
+#
+#   1. EGRESS to Ollama (Windows host port 11434) is allowed ONLY from
+#      pods in ai-sandbox labeled ollama-client: "true".
+#
+#   2. INGRESS to ai-sandbox pods is denied from all other namespaces.
+#
+#   3. kube-system (and any other namespace) is blocked from
+#      reaching the Windows host GPU on port 11434.
+#
+# NETWORK TOPOLOGY:
+#   Windows host (Ollama): <HOST-IP>  (vEthernet PrimarySwitch, /22)
+#   k3s Hyper-V VM:        <VM-IP>  (same /22 subnet)
+#
+# REQUIRES: A CNI that enforces NetworkPolicy (Flannel + kube-router,
+#           Calico, or Cilium). Vanilla Flannel alone does NOT enforce.
+# ============================================================
+
+---
+# Rule 1: Restrict which pods WITHIN ai-sandbox can initiate
+# connections to the Ollama service (ollama-host:11434).
+# Pods must carry the label: ollama-client: "true"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ollama-egress
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: ollama-netpol
+    app.kubernetes.io/component: network-security
+    homelab.bavs.io/security-zone: zero-trust
+spec:
+  # This policy governs pods in ai-sandbox that are labeled as clients
+  podSelector:
+    matchLabels:
+      ollama-client: "true"
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS resolution (CoreDNS in kube-system) — without this
+    # the service name will not resolve and connections will silently fail.
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Allow egress to the Windows host Ollama API.
+    # <HOST-IP> = vEthernet (PrimarySwitch) on the Windows bare-metal host.
+    - to:
+        - ipBlock:
+            cidr: <HOST-IP>/32
+      ports:
+        - protocol: TCP
+          port: 11434
+
+---
+# Rule 2: Deny all ingress to ai-sandbox pods from any namespace
+# EXCEPT traffic that originates within ai-sandbox itself.
+# This prevents lateral movement from kube-system, monitoring, etc.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: ai-sandbox-default-deny
+    app.kubernetes.io/component: network-security
+    homelab.bavs.io/security-zone: zero-trust
+spec:
+  podSelector: {}   # Applies to ALL pods in ai-sandbox
+  policyTypes:
+    - Ingress
+  ingress:
+    # Only allow intra-namespace traffic (pods talking to each other)
+    - from:
+        - podSelector: {}
+
+---
+# Rule 3: Explicitly deny all other namespaces from accessing
+# the ollama-host Service on 11434. This is belt-and-suspenders
+# alongside the ai-sandbox Ingress default-deny above, and
+# prevents any future cross-namespace ServiceAccount misconfiguration
+# from accidentally routing traffic here.
+#
+# Place this policy in EACH namespace that should NOT reach Ollama.
+# The kube-system example is shown; replicate for monitoring, librechat, etc.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-ollama-egress-from-kube-system
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: deny-ollama-from-kube-system
+    app.kubernetes.io/component: network-security
+    homelab.bavs.io/security-zone: zero-trust
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # Allow everything EXCEPT port 11434 to the host IP.
+    # NetworkPolicy is additive — we allow all, then we add
+    # a second policy with an ipBlock except to carve out 11434.
+    # The cleanest approach is to use Calico/Cilium GlobalNetworkPolicy.
+    # With vanilla NetworkPolicy, use the except block:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - <HOST-IP>/32
+    # DNS must still work from kube-system
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

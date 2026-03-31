@@ -1,0 +1,71 @@
+# ============================================================
+# ollama-endpoint.yaml
+#
+# PURPOSE: Creates a headless Service + manual EndpointSlice
+# that bridges the ai-sandbox namespace to the Windows bare-metal
+# host's Ollama API running on port 11434.
+#
+# NETWORK TOPOLOGY:
+#   Windows host:  <HOST-IP>  (vEthernet PrimarySwitch, /22)
+#   k3s Hyper-V VM: <VM-IP>  (same /22 subnet)
+#   Both addresses fall within <LAN-SUBNET> — same L2 broadcast domain.
+#
+# Pods in ai-sandbox reach Ollama via the stable DNS name:
+#   http://ollama-host.ai-sandbox.svc.cluster.local:11434
+#
+# IMPORTANT: If the Windows host IP changes (DHCP), update the
+# EndpointSlice below and the NetworkPolicy. Setting a DHCP
+# reservation on your router for the host MAC is strongly recommended.
+# ============================================================
+
+---
+# Headless service — no selector, no kube-proxy ClusterIP load balancing.
+# The EndpointSlice below is attached to this Service by name.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-host
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: ollama-host
+    app.kubernetes.io/component: inference-bridge
+    app.kubernetes.io/managed-by: kubectl
+  annotations:
+    # Human-readable purpose tag — surfaced in k9s / Lens
+    homelab.bavs.io/description: "External bridge to bare-metal Ollama on RTX 5090"
+spec:
+  # No selector: traffic is forwarded via the EndpointSlice below.
+  clusterIP: None
+  ports:
+    - name: ollama-http
+      port: 11434
+      targetPort: 11434
+      protocol: TCP
+
+---
+# EndpointSlice — explicitly points at the host NIC IP.
+# Use EndpointSlice (not the legacy Endpoints object) for k3s 1.21+.
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: ollama-host
+  namespace: ai-sandbox
+  labels:
+    # This magic label binds the slice to the Service above.
+    kubernetes.io/service-name: ollama-host
+    app.kubernetes.io/name: ollama-host
+    app.kubernetes.io/component: inference-bridge
+    app.kubernetes.io/managed-by: kubectl
+addressType: IPv4
+ports:
+  - name: ollama-http
+    port: 11434
+    protocol: TCP
+endpoints:
+  - addresses:
+      # Windows host IP on vEthernet (PrimarySwitch) — <LAN-SUBNET> subnet
+      # !! Set a DHCP reservation for this MAC to prevent IP drift !!
+      - "<HOST-IP>"
+    conditions:
+      ready: true
+    nodeName: k3s-host-bridge  # Informational only; not enforced by k3s

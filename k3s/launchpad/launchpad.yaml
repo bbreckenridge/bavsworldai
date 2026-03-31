@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: launchpad
+  namespace: platform-services
+  labels:
+    app: launchpad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: launchpad
+  template:
+    metadata:
+      labels:
+        app: launchpad
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 10m
+            memory: 10Mi
+          limits:
+            cpu: 50m
+            memory: 50Mi
+        volumeMounts:
+        - name: web-content
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: web-content
+        hostPath:
+          path: /mnt/media/AI_Data/launchpad/www
+          type: DirectoryOrCreate
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: launchpad
+  namespace: platform-services
+spec:
+  selector:
+    app: launchpad
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: launchpad-routing
+  namespace: platform-services
+spec:
+  hosts:
+  - "<YOUR-DOMAIN.COM>"
+  - "www.<YOUR-DOMAIN.COM>"
+  gateways:
+  - istio-system/default-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: launchpad.platform-services.svc.cluster.local
+        port:
+          number: 80

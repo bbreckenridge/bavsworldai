@@ -1,0 +1,72 @@
+# ============================================================
+# kokoro.yaml
+#
+# PURPOSE: Deploy Kokoro-82M TTS as an OpenAI-compatible API.
+# ============================================================
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kokoro
+  namespace: ai-sandbox
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8880
+  selector:
+    app: kokoro
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kokoro
+  namespace: ai-sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kokoro
+  template:
+    metadata:
+      labels:
+        app: kokoro
+    spec:
+      containers:
+        - name: kokoro
+          image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.2
+          ports:
+            - containerPort: 8880
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          # 82M params is small; CPU inference is usually sub-second.
+          env:
+            - name: USE_GPU
+              value: "false"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kokoro
+  namespace: ai-sandbox
+spec:
+  hosts:
+  - "voice.<YOUR-DOMAIN.COM>"
+  gateways:
+  - istio-system/default-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: kokoro.ai-sandbox.svc.cluster.local
+        port:
+          number: 80

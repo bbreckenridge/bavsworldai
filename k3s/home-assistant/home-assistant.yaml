@@ -1,0 +1,93 @@
+# ============================================================
+# home-assistant.yaml
+#
+# PURPOSE: Deploy Home Assistant Core to the ai-sandbox.
+# Exposes the UI via Istio at home.<YOUR-DOMAIN.COM>.
+# ============================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-assistant-pvc
+  namespace: ai-sandbox
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: home-assistant
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: home-assistant
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8123
+      targetPort: 8123
+  selector:
+    app.kubernetes.io/name: home-assistant
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: home-assistant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: home-assistant
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: home-assistant
+    spec:
+      containers:
+        - name: home-assistant
+          image: ghcr.io/home-assistant/home-assistant:stable
+          ports:
+            - containerPort: 8123
+              name: http
+          env:
+            - name: TZ
+              value: "America/Chicago"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: home-assistant-pvc
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: home-assistant
+  namespace: ai-sandbox
+spec:
+  hosts:
+  - "home.<YOUR-DOMAIN.COM>"
+  gateways:
+  - istio-system/default-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: home-assistant.ai-sandbox.svc.cluster.local
+        port:
+          number: 8123

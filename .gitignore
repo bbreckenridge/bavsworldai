@@ -1,0 +1,28 @@
+# Local environment files
+.env
+.env.local
+.venv/
+venv/
+__pycache__/
+
+# Kubernetes/Helm
+build/
+dist/
+
+# System specific
+.system_generated/
+.DS_Store
+Thumbs.db
+
+# Secrets & Keys
+*.crt
+*.key
+*.pem
+*.pfx
+keys.txt
+
+# SOPS Management
+*-secrets.yaml      # Ignore plaintext secrets
+!*.enc.yaml         # COMMITTING encrypted files is the goal
+*.dec.yaml          # Ignore temporary decrypted files
+sops-secret.yaml    # Generic ignore for local testing

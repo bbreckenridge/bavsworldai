@@ -1,0 +1,163 @@
+# ============================================================
+# open-webui.yaml
+#
+# PURPOSE: Deploy Open WebUI as the primary frontend for the 
+# private XiP AI experience.
+# ============================================================
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open-webui-pvc
+  namespace: ai-sandbox
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+  namespace: ai-sandbox
+  labels:
+    app.kubernetes.io/name: open-webui
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: open-webui
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: ai-sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: open-webui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: open-webui
+    spec:
+      containers:
+        - name: open-webui
+          image: ghcr.io/open-webui/open-webui:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          env:
+            - name: DATA_DIR
+              value: "/app/data"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "8080"
+            - name: WEBUI_NAME
+              value: "XiP AI"
+            - name: ENABLE_SIGNUP
+              value: "true"
+            - name: WEBUI_DATABASE_URL
+              value: "sqlite:////app/data/webui.db"
+            - name: ENABLE_SEARCH_ENGINE
+              value: "true"
+            - name: WEB_SEARCH_ENGINE
+              value: "searxng"
+            - name: ENABLE_WEB_SEARCH
+              value: "true"
+            - name: SEARXNG_QUERY_URL
+              value: "http://searxng.ai-sandbox.svc.cluster.local/search?q=<query>"
+            - name: RAG_EMBEDDING_ENGINE
+              value: "ollama"
+            - name: RAG_EMBEDDING_MODEL
+              value: "nomic-embed-text"
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama-host.ai-sandbox.svc.cluster.local:11434"
+            - name: WEBUI_LOG_LEVEL
+              value: "info"
+            - name: FAVICON_URL
+              value: "https://chat.<YOUR-DOMAIN.COM>/favicon.png"
+            - name: WEBUI_URL
+              value: "https://chat.<YOUR-DOMAIN.COM>"
+            - name: DEFAULT_MODELS
+              value: "llama3.3"
+            - name: ENABLE_IMAGE_GENERATION
+              value: "false"
+            - name: IMAGE_GENERATION_ENGINE
+              value: "automatic1111"
+            - name: AUTOMATIC1111_BASE_URL
+              value: "http://<HOST-IP>:7860"
+            - name: ENABLE_FUNCTION_INSTALL
+              value: "true"
+            # OpenAI Compatible TTS (Kokoro)
+            - name: AUDIO_OPENAI_API_BASE_URL
+              value: "http://kokoro.ai-sandbox.svc.cluster.local/v1"
+            - name: AUDIO_OPENAI_API_KEY
+              value: "kokoro"
+            # OpenAI Compatible STT (Whisper)
+            - name: AUDIO_STT_ENGINE
+              value: "openai"
+            - name: AUDIO_STT_OPENAI_API_BASE_URL
+              value: "http://whisper.ai-sandbox.svc.cluster.local/v1"
+            - name: AUDIO_STT_OPENAI_API_KEY
+              value: "whisper"
+            - name: AUDIO_STT_MODEL
+              value: "base"
+          volumeMounts:
+            - name: webui-data
+              mountPath: /app/data
+      volumes:
+        - name: webui-data
+          hostPath:
+            path: /mnt/media/AI_Data/open-webui
+            type: DirectoryOrCreate
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: open-webui
+  namespace: ai-sandbox
+spec:
+  hosts:
+  - "chat.<YOUR-DOMAIN.COM>"
+  gateways:
+  - istio-system/default-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: open-webui.ai-sandbox.svc.cluster.local
+        port:
+          number: 80
