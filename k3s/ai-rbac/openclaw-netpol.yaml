@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-netpol
+  namespace: platform-services
+spec:
+  podSelector:
+    matchLabels:
+      app: openclaw
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from Istio Ingress Gateway
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          istio: ingressgateway
+  egress:
+  # Allow all egress (needed for AI agents to call out to internet APIs, web scraping, etc)
+  - {}
