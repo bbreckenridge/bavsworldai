@@ -1,0 +1,6 @@
+FROM nemotron-mini:4b
+
+# Fast logic, math, and high-precision calculation model for XiP AI
+# Routed to by the Open WebUI logic_router filter for math/logic intents
+PARAMETER num_ctx 16384
+PARAMETER num_predict 4096

@@ -18,6 +18,18 @@ spec:
       containers:
       - name: nginx
         image: nginx:alpine
+        command: ["/bin/sh", "-c", "envsubst < /tmp/html-template/index.html.template > /usr/share/nginx/html/index.html && cp /tmp/assets/* /usr/share/nginx/html/ 2>/dev/null || true && nginx -g 'daemon off;'"]
+        env:
+        - name: AUTH_URL
+          value: "https://auth.<YOUR-DOMAIN.COM>"
+        - name: AUTH_CLIENT_ID
+          value: "bavsworld-launchpad"
+        - name: TELEMETRY_URL
+          value: "https://dashboards.<YOUR-DOMAIN.COM>"
+        - name: HOME_ASSISTANT_URL
+          value: "https://home.<YOUR-DOMAIN.COM>"
+        - name: XIP_AI_URL
+          value: "https://chat.<YOUR-DOMAIN.COM>"
         ports:
         - containerPort: 80
         resources:
@@ -28,10 +40,19 @@ spec:
             cpu: 50m
             memory: 50Mi
         volumeMounts:
+        - name: html-template
+          mountPath: /tmp/html-template
         - name: web-content
           mountPath: /usr/share/nginx/html
+        - name: host-assets
+          mountPath: /tmp/assets
       volumes:
+      - name: html-template
+        configMap:
+          name: launchpad-html
       - name: web-content
+        emptyDir: {}
+      - name: host-assets
         hostPath:
           path: /mnt/media/AI_Data/launchpad/www
           type: DirectoryOrCreate

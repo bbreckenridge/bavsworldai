@@ -44,6 +44,7 @@ The system is designed as an **Agentic Hub** that utilizes specialized models ba
 | **Knowledge (RAG)** | nomic-embed-text | Host (Ollama / 100% GPU) | Vector embeddings for long-term memory. |
 | **Voice Synthesis** | Kokoro-82M (TTS) | Cluster (GPU-Acceleration) | Sub-second high-fidelity speech. |
 | **Voice Transcription** | Whisper (STT) | Cluster (CPU-Optimized) | Local, private speech-to-text. |
+| **Agentic Coding** | Qwen3-Coder (30B) | Host (Ollama / 100% GPU) | IaC generation & code editing via Roo Code. |
 
 ### 1.2 Agentic Routing Flow (The "XiP AI" Experience) 🛰️
 Requests are automatically analyzed and dispatched to the most capable model or tool.
@@ -110,6 +111,7 @@ The sandbox runs in a hybrid configuration to maximize the **RTX 5090**'s perfor
 | **Scripts** | `scripts/` | Host-side automation & Codebase ingestion. |
 | **Data** | `data/` | Codebase digests & model storage. |
 | **AI RBAC** | `k3s/ai-rbac/` | NetworkPolicies and security controls. |
+| **Ollama Modelfiles** | `data/modelfiles/` | Custom Ollama model configs with tuned context windows. |
 
 ### 3.1 Open WebUI Integration Tools
 - **Text-to-Image Generator**: A custom Python proxy that bridges Open WebUI directly to the SD Forge Host API (`<HOST-IP>:7860`), triggering high-fidelity dual-pass `sd_xl_base` generations inline via the chat. The source code is permanently versioned at `k3s/stable-diffusion/open_webui_sd_image_tool.py`.
@@ -119,11 +121,22 @@ The sandbox runs in a hybrid configuration to maximize the **RTX 5090**'s perfor
 
 ## 4. Maintenance & Scaling ⚓
 ### Pulling Models
-To update the intelligence core, run the following on the host:
+All models are configured via Modelfiles in `data/modelfiles/` for consistent context windows. To register them with Ollama:
 ```powershell
-ollama pull llama3.3:70b-instruct-q4_K_M
+# Register all XiP AI models (run once after pulling)
+ollama create llama3.3-xip    -f data/modelfiles/Modelfile.llama3.3
+ollama create nemotron-mini-xip -f data/modelfiles/Modelfile.nemotron-mini
+ollama create nomic-embed-xip  -f data/modelfiles/Modelfile.nomic-embed-text
+ollama create qwen3-coder-32k  -f data/modelfiles/Modelfile.qwen3-coder
+```
+
+To pull/update the base models from Ollama:
+```powershell
+ollama pull llama3.3:latest
 ollama pull qwen2.5-vl:latest
 ollama pull nemotron-mini:4b
+ollama pull nomic-embed-text:latest
+ollama pull qwen3-coder:30b
 ```
 
 ### Resource Optimization

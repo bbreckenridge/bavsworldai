@@ -12,9 +12,28 @@ from typing import List, Union, Generator, Iterator
 class Filter:
     def __init__(self):
         # The model to route math/logic questions to
-        self.logic_model = "nemotron-mini:4b"
-        # Keywords that trigger routing
-        self.trigger_keywords = ["math", "logic", "calculate", "solve", "proof", "reasoning", "integral", "derivative", "equation"]
+        self.logic_model = "nemotron-mini-xip"
+        # Keywords that trigger routing to the math/logic specialist.
+        # Kept specific to avoid false positives on casual mentions.
+        self.trigger_keywords = [
+            # Arithmetic & algebra
+            "calculate", "compute", "evaluate", "simplify",
+            "solve for", "equation", "inequality", "polynomial",
+            "factor", "factorize", "expand",
+            # Calculus
+            "integral", "integrate", "derivative", "differentiate",
+            "limit", "differential equation",
+            # Statistics & probability
+            "probability", "statistics", "standard deviation",
+            "variance", "mean", "median", "regression",
+            # Discrete math & proofs
+            "proof", "prove that", "theorem", "induction",
+            "combinatorics", "permutation", "combination",
+            "boolean algebra", "truth table", "logical operator",
+            # Physics & engineering math
+            "eigenvalue", "eigenvector", "matrix", "vector calculus",
+            "fourier", "laplace transform",
+        ]
 
     def inlet(self, body: dict, __user__: dict) -> dict:
         print(f"Checking message for logic/math intent: {body['messages'][-1]['content']}")

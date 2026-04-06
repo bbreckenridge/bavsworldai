@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: launchpad-html
+  namespace: platform-services
+data:
+  index.html.template: |
+    <!DOCTYPE html>
+    <html lang="en">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>BAvsWorld Ecosystem</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    
+    <body>
+        <div class="overlay"></div>
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    
+        <main class="container" style="display: none;">
+            <header>
+                <h1 class="glow-text">BAvs<span class="highlight">World</span></h1>
+                <p id="greeting" class="subtitle">Access your personal intelligence ecosystem.</p>
+            </header>
+    
+            <div class="grid">
+                <a href="${XIP_AI_URL}" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" class="icon" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                    </div>
+                    <h2>XiP AI</h2>
+                    <p>Your primary, unified chat interface for LLaMA 3.3, Voice, Vision, and RAG Intelligence.</p>
+                </a>
+    
+                <a href="${TELEMETRY_URL}" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" class="icon" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h2>Telemetry</h2>
+                    <p>Grafana dashboards and LGTM observability stack monitoring cluster health and logic engines.</p>
+                </a>
+    
+                <a href="${AUTH_URL}" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" class="icon" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                    </div>
+                    <h2>Keycloak</h2>
+                    <p>Centralized identity, credentials management, and SSO provisioning for the BavsWorld ecosystem.</p>
+                </a>
+    
+                <a href="${HOME_ASSISTANT_URL}" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" class="icon" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                    </div>
+                    <h2>Home Assistant</h2>
+                    <p>Your local smart home automation controller, integrated with the AI backend.</p>
+                </a>
+            </div>
+    
+            <footer>
+                <p>&copy; 2026 BAvsWorld Infrastructure | Powered by K3s & RTX 5090</p>
+            </footer>
+        </main>
+    
+        <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.2/dist/keycloak.min.js"></script>
+        <script>
+            const kc = new Keycloak({
+                url: '${AUTH_URL}',
+                realm: 'master',
+                clientId: '${AUTH_CLIENT_ID}'
+            });
+    
+            // Redirect all unauthenticated traffic instantly to the Keycloak Auth page
+            kc.init({ onLoad: 'login-required', checkLoginIframe: false }).then(authenticated => {
+                if (authenticated) {
+                    // Unhide the UI now that we hold the active SSO token
+                    document.querySelector('.container').style.display = 'flex';
+    
+                    // Formulate temporal greeting
+                    const hour = new Date().getHours();
+                    let text = "Good evening";
+                    if (hour >= 5 && hour < 12) text = "Good morning";
+                    else if (hour >= 12 && hour < 18) text = "Good afternoon";
+    
+                    // Extract Keycloak Identity Name
+                    const identityName = kc.tokenParsed.given_name || kc.tokenParsed.preferred_username || "";
+                    document.getElementById('greeting').innerText = `${text} ${identityName}, welcome back to the hub.`;
+                }
+            }).catch(err => {
+                console.error("Failed to initialize Keycloak", err);
+                document.getElementById('greeting').innerText = "SSO Bridge Disconnected. Unable to reach Keycloak.";
+                document.querySelector('.container').style.display = 'flex';
+            });
+    
+            // Entry animations
+            document.querySelectorAll('.card').forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.15}s`;
+            });
+        </script>
+    </body>
+    
+    </html>

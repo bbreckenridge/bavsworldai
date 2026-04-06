@@ -1,0 +1,6 @@
+FROM nomic-embed-text:latest
+
+# RAG embedding model for Open WebUI Knowledge Bases
+# Used for vector embeddings — context window is intentionally small
+# (embedding models process one chunk at a time, not full conversations)
+PARAMETER num_ctx 8192

@@ -1,19 +1,15 @@
 # ============================================================
-# extract-codebase.ps1
+# extract-codebase2.ps1
 #
-# PURPOSE: Recursively crawl the Development Projects folder,
-# filter for source code, and bundle it into a single Digest
-# file for AI RAG ingestion.
+# PURPOSE: Same as extract-codebase.ps1 but outputs to
+# codebase-digest2.md (fresh regeneration).
 # ============================================================
 
 $SourceDir = "d:\Development Projects"
-$OutputDir = "d:\Development Projects"
-$OutputFile = "$OutputDir\codebase-digest.md"
+$OutputFile = "$SourceDir\codebase-digest2.md"
 
-# Extensions to include
 $IncludeExtensions = @(".py", ".js", ".ts", ".yaml", ".yml", ".md", ".go", ".sql", ".sh", ".ps1", ".bat", ".html", ".css")
 
-# Directories/Files to ignore
 $ExcludePatterns = @(
     "node_modules",
     ".git",
@@ -24,8 +20,8 @@ $ExcludePatterns = @(
     "__pycache__",
     ".next",
     ".gemini",
-    "bavsworldai",      # IMPORTANT: Exclude self to prevent infinite recursion
-    "codebase-digest.md"
+    "bavsworldai",
+    "codebase-digest"
 )
 
 Write-Host "--- Starting Codebase Extraction ---"
@@ -35,16 +31,16 @@ $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $Files = Get-ChildItem -Path $SourceDir -Recurse -File | Where-Object {
     $filePath = $_.FullName
     $ext = $_.Extension.ToLower()
-    
+
     $shouldInclude = $IncludeExtensions -contains $ext
-    
+
     foreach ($pattern in $ExcludePatterns) {
-        if ($filePath -like "*\$pattern\*") {
+        if ($filePath -like "*\$pattern*") {
             $shouldInclude = $false
             break
         }
     }
-    
+
     $shouldInclude
 }
 
@@ -54,9 +50,9 @@ foreach ($File in $Files) {
     $RelativePath = $File.FullName.Replace($SourceDir, "")
     $ExtName = $File.Extension.Replace(".", "")
     "`n## FILE: $RelativePath" | Out-File -FilePath $OutputFile -Append -Encoding utf8
-    "````$ExtName" | Out-File -FilePath $OutputFile -Append -Encoding utf8
+    "``````$ExtName" | Out-File -FilePath $OutputFile -Append -Encoding utf8
     Get-Content $File.FullName | Out-File -FilePath $OutputFile -Append -Encoding utf8
-    "````" | Out-File -FilePath $OutputFile -Append -Encoding utf8
+    "``````" | Out-File -FilePath $OutputFile -Append -Encoding utf8
 }
 
 Write-Host "--- Extraction Complete: $OutputFile ---"
