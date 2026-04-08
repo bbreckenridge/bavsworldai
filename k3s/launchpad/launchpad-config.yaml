@@ -71,6 +71,17 @@ data:
                     <h2>Home Assistant</h2>
                     <p>Your local smart home automation controller, integrated with the AI backend.</p>
                 </a>
+
+                <a href="${DNS_URL}" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" class="icon" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <h2>DNS Shield</h2>
+                    <p>AdGuard Home DNS — manage network-wide ad blocking, rewrite rules, and DNS filter lists.</p>
+                </a>
             </div>
     
             <footer>

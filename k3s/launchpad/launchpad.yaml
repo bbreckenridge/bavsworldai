@@ -30,6 +30,8 @@ spec:
           value: "https://home.example.com"
         - name: XIP_AI_URL
           value: "https://chat.example.com"
+        - name: DNS_URL
+          value: "https://dns.example.com"
         ports:
         - containerPort: 80
         resources:
