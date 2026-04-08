@@ -21,7 +21,7 @@ data:
         <div class="glow-orb orb-1"></div>
         <div class="glow-orb orb-2"></div>
     
-        <main class="container" style="display: none;">
+        <main class="container">
             <header>
                 <h1 class="glow-text">BAvs<span class="highlight">World</span></h1>
                 <p id="greeting" class="subtitle">Access your personal intelligence ecosystem.</p>
@@ -47,7 +47,7 @@ data:
                         </svg>
                     </div>
                     <h2>Telemetry</h2>
-                    <p>Grafana dashboards and LGTM observability stack monitoring cluster health and logic engines.</p>
+                    <p>Grafana dashboards monitoring cluster health and logic engine performance.</p>
                 </a>
     
                 <a href="${AUTH_URL}" target="_blank" rel="noopener noreferrer" class="card">
@@ -57,8 +57,8 @@ data:
                                 d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                         </svg>
                     </div>
-                    <h2>Keycloak</h2>
-                    <p>Centralized identity, credentials management, and SSO provisioning for the BavsWorld ecosystem.</p>
+                    <h2>Identity</h2>
+                    <p>Keycloak OIDC / SSO governance and decentralized user provisioning.</p>
                 </a>
     
                 <a href="${HOME_ASSISTANT_URL}" target="_blank" rel="noopener noreferrer" class="card">
@@ -80,7 +80,18 @@ data:
                         </svg>
                     </div>
                     <h2>DNS Shield</h2>
-                    <p>AdGuard Home DNS — manage network-wide ad blocking, rewrite rules, and DNS filter lists.</p>
+                    <p>AdGuard Home — manage network-wide ad blocking and DNS rewrite rules.</p>
+                </a>
+
+                <a href="https://login.tailscale.com/admin" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" class="icon" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2>Tailscale</h2>
+                    <p>Manage your secure mesh VPN, subnet routes, and MagicDNS settings.</p>
                 </a>
             </div>
     
@@ -89,39 +100,17 @@ data:
             </footer>
         </main>
     
-        <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.2/dist/keycloak.min.js"></script>
         <script>
-            const kc = new Keycloak({
-                url: '${AUTH_URL}',
-                realm: 'master',
-                clientId: '${AUTH_CLIENT_ID}'
-            });
-    
-            // Redirect all unauthenticated traffic instantly to the Keycloak Auth page
-            kc.init({ onLoad: 'login-required', checkLoginIframe: false }).then(authenticated => {
-                if (authenticated) {
-                    // Unhide the UI now that we hold the active SSO token
-                    document.querySelector('.container').style.display = 'flex';
-    
-                    // Formulate temporal greeting
-                    const hour = new Date().getHours();
-                    let text = "Good evening";
-                    if (hour >= 5 && hour < 12) text = "Good morning";
-                    else if (hour >= 12 && hour < 18) text = "Good afternoon";
-    
-                    // Extract Keycloak Identity Name
-                    const identityName = kc.tokenParsed.given_name || kc.tokenParsed.preferred_username || "";
-                    document.getElementById('greeting').innerText = `${text} ${identityName}, welcome back to the hub.`;
-                }
-            }).catch(err => {
-                console.error("Failed to initialize Keycloak", err);
-                document.getElementById('greeting').innerText = "SSO Bridge Disconnected. Unable to reach Keycloak.";
-                document.querySelector('.container').style.display = 'flex';
-            });
-    
+            // Formulate temporal greeting
+            const hour = new Date().getHours();
+            let text = "Good evening";
+            if (hour >= 5 && hour < 12) text = "Good morning";
+            else if (hour >= 12 && hour < 18) text = "Good afternoon";
+            document.getElementById('greeting').innerText = `${text}, welcome back to the hub.`;
+
             // Entry animations
             document.querySelectorAll('.card').forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.15}s`;
+                card.style.animationDelay = `${index * 0.1}s`;
             });
         </script>
     </body>
