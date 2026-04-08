@@ -67,6 +67,8 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: SEARXNG_PORT
+              value: "8080"
             - name: SEARXNG_SETTINGS_PATH
               value: "/etc/searxng/settings.yml"
           envFrom:

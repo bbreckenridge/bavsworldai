@@ -2,7 +2,7 @@
 # home-assistant.yaml
 #
 # PURPOSE: Deploy Home Assistant Core to the ai-sandbox.
-# Exposes the UI via Istio at home.<YOUR-DOMAIN.COM>.
+# Exposes the UI via Istio at home.example.com.
 # ============================================================
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -79,7 +79,7 @@ metadata:
   namespace: ai-sandbox
 spec:
   hosts:
-  - "home.<YOUR-DOMAIN.COM>"
+  - "home.example.com"
   gateways:
   - istio-system/default-gateway
   http:

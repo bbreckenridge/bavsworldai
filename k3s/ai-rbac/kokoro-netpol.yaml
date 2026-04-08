@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kokoro-allow-istio
+  namespace: ai-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app: kokoro
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          istio: ingressgateway
+    ports:
+    - protocol: TCP
+      port: 8880

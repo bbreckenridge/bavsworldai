@@ -11,7 +11,6 @@ This repository has been sanitized for public release.
 > This repository uses **SOPS** with **Age** to protect secrets. Decrypt them before applying to the cluster:
 > ```powershell
 > # Decrypt and apply in one go
-> sops -d k3s/librechat/librechat-secrets.enc.yaml | kubectl apply -f -
 > sops -d k3s/searxng/searxng-secrets.enc.yaml | kubectl apply -f -
 > ```
 
@@ -20,7 +19,7 @@ This repository has been sanitized for public release.
 > The orchestration tools and Python proxies within this repository provide Large Language Models (LLMs) with direct execution access to local APIs, rendering pipelines, and file systems.
 > AI models can and will make mistakes, hallucinate commands, or interpret requests unpredictably. 
 > - **NEVER** grant an AI agent unrestricted permission to delete or overwrite production state.
-> - **ALWAYS** review the Python execution logic before applying Custom Tools to your Open WebUI or LibreChat environments. 
+> - **ALWAYS** review the Python execution logic before applying Custom Tools to your Open WebUI environment.
 > - **ISOLATE** the AI Sandbox using strict Zero-Trust NetworkPolicies to prevent lateral movement across your network in the event of an unintended Agentic hallucination.
 
 ---
@@ -106,11 +105,13 @@ The sandbox runs in a hybrid configuration to maximize the **RTX 5090**'s perfor
 | **Voice (STT)** | `k3s/whisper/` | Whisper Audio transcription service. |
 | **SearXNG** | `k3s/searxng/` | Local, private search engine. |
 | **Home Assistant** | `k3s/home-assistant/` | Smart Home control bridge. |
-| **Ollama Bridge** | `k3s/ollama-bridge/` | Connectivity between cluster and host AI. |
-| **SD Forge (Host)** | `D:\Program Files\stable-diffusion\` | High-performance image/video hub. |
-| **Scripts** | `scripts/` | Host-side automation & Codebase ingestion. |
-| **Data** | `data/` | Codebase digests & model storage. |
-| **AI RBAC** | `k3s/ai-rbac/` | NetworkPolicies and security controls. |
+| **OpenClaw** | `k3s/openclaw/` | LLM Gateway for Agentic tool routing. |
+| **Stable Diffusion** | `k3s/stable-diffusion/` | Istio routing bridge to host SD/Forge API. |
+| **Launchpad** | `k3s/launchpad/` | Internal service dashboard. |
+| **Grafana** | `k3s/grafana/` | Dashboards (metrics datasources configurable). |
+| **Ollama Bridge** | `k3s/ollama-bridge/` | Connectivity between cluster and host Ollama. |
+| **AI RBAC** | `k3s/ai-rbac/` | NetworkPolicies and Zero-Trust security controls. |
+| **Scripts** | `scripts/` | Host-side automation & codebase ingestion. |
 | **Ollama Modelfiles** | `data/modelfiles/` | Custom Ollama model configs with tuned context windows. |
 
 ### 3.1 Open WebUI Integration Tools
@@ -177,14 +178,18 @@ kubectl apply -f k3s/ollama-bridge/
 ### Step 3: Deploy the Core AI Workloads
 Finally, deploy the front-end user interfaces and supporting microservices sequentially. Make sure to decrypt any SOPS secrets beforehand (e.g., SearXNG keys).
 ```bash
-# Apply Search and Memory
+# Apply Search Engine
 sops -d k3s/searxng/searxng-secrets.enc.yaml | kubectl apply -f -
 kubectl apply -k k3s/searxng/
-kubectl apply -k k3s/meilisearch/
 
 # Apply Voice Services
 kubectl apply -k k3s/whisper/
 kubectl apply -k k3s/kokoro/
+
+# Apply Stable Diffusion bridge, Launchpad, OpenClaw
+kubectl apply -k k3s/stable-diffusion/
+kubectl apply -k k3s/launchpad/
+kubectl apply -k k3s/openclaw/
 
 # Apply Primary User Interface
 kubectl apply -k k3s/open-webui/

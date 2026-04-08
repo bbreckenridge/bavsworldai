@@ -2,7 +2,7 @@
 # sd-webui.yaml
 #
 # PURPOSE: Deploy Stable Diffusion WebUI (Automatic1111) to K3s.
-# Exposes the UI and API via Istio at sd.<YOUR-DOMAIN.COM>.
+# Exposes the UI and API via Istio at sd.example.com.
 # ============================================================
 apiVersion: v1
 kind: Service
@@ -10,8 +10,8 @@ metadata:
   name: sd-webui
   namespace: ai-sandbox
 spec:
-  type: ExternalName
-  externalName: <HOST-IP> # Windows Host IP
+  
+  
   ports:
     - name: http
       port: 7860
@@ -25,7 +25,7 @@ metadata:
   namespace: ai-sandbox
 spec:
   hosts:
-  - "sd.<YOUR-DOMAIN.COM>"
+  - "sd.example.com"
   gateways:
   - istio-system/default-gateway
   http:

@@ -1,7 +1,7 @@
 """
 title: Logic & Math Router (Nemotron)
 author: bavsworld
-author_url: https://gemini.<YOUR-DOMAIN.COM>
+author_url: https://gemini.example.com
 version: 1.0
 """
 

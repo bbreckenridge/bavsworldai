@@ -59,7 +59,7 @@ metadata:
   namespace: ai-sandbox
 spec:
   hosts:
-  - "whisper.<YOUR-DOMAIN.COM>"
+  - "whisper.example.com"
   gateways:
   - istio-system/default-gateway
   http:

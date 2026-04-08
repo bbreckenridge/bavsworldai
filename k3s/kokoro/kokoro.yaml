@@ -58,7 +58,7 @@ metadata:
   namespace: ai-sandbox
 spec:
   hosts:
-  - "voice.<YOUR-DOMAIN.COM>"
+  - "voice.example.com"
   gateways:
   - istio-system/default-gateway
   http:

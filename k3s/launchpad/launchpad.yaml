@@ -21,15 +21,15 @@ spec:
         command: ["/bin/sh", "-c", "envsubst < /tmp/html-template/index.html.template > /usr/share/nginx/html/index.html && cp /tmp/assets/* /usr/share/nginx/html/ 2>/dev/null || true && nginx -g 'daemon off;'"]
         env:
         - name: AUTH_URL
-          value: "https://auth.<YOUR-DOMAIN.COM>"
+          value: "https://auth.example.com"
         - name: AUTH_CLIENT_ID
           value: "bavsworld-launchpad"
         - name: TELEMETRY_URL
-          value: "https://dashboards.<YOUR-DOMAIN.COM>"
+          value: "https://dashboards.example.com"
         - name: HOME_ASSISTANT_URL
-          value: "https://home.<YOUR-DOMAIN.COM>"
+          value: "https://home.example.com"
         - name: XIP_AI_URL
-          value: "https://chat.<YOUR-DOMAIN.COM>"
+          value: "https://chat.example.com"
         ports:
         - containerPort: 80
         resources:
@@ -79,8 +79,8 @@ metadata:
   namespace: platform-services
 spec:
   hosts:
-  - "<YOUR-DOMAIN.COM>"
-  - "www.<YOUR-DOMAIN.COM>"
+  - "example.com"
+  - "www.example.com"
   gateways:
   - istio-system/default-gateway
   http:

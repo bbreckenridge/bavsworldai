@@ -105,9 +105,9 @@ spec:
             - name: WEBUI_LOG_LEVEL
               value: "info"
             - name: FAVICON_URL
-              value: "https://chat.<YOUR-DOMAIN.COM>/favicon.png"
+              value: "https://chat.example.com/favicon.png"
             - name: WEBUI_URL
-              value: "https://chat.<YOUR-DOMAIN.COM>"
+              value: "https://chat.example.com"
             - name: DEFAULT_MODELS
               value: "llama3.3"
             - name: ENABLE_IMAGE_GENERATION
@@ -149,7 +149,7 @@ metadata:
   namespace: ai-sandbox
 spec:
   hosts:
-  - "chat.<YOUR-DOMAIN.COM>"
+  - "chat.example.com"
   gateways:
   - istio-system/default-gateway
   http:

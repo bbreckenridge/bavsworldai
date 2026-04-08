@@ -32,7 +32,12 @@ spec:
       - name: openclaw
         image: ghcr.io/openclaw/openclaw:latest
         imagePullPolicy: Always
+        command: ["node", "dist/index.js", "gateway", "--bind", "loopback", "--port", "3000", "--allow-unconfigured"]
+      - name: loopback-relay
+        image: alpine/socat:latest
+        command: ["socat", "tcp-listen:3001,reuseaddr,fork", "tcp:127.0.0.1:3000"]
         ports:
+        - containerPort: 3001
         - containerPort: 3000
         resources:
           requests:
@@ -61,7 +66,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 3000
+      targetPort: 3001
 
 ---
 apiVersion: networking.istio.io/v1beta1
@@ -71,13 +76,15 @@ metadata:
   namespace: platform-services
 spec:
   hosts:
-  - "openclaw.<YOUR-DOMAIN.COM>"
+  - "openclaw.example.com"
   gateways:
   - istio-system/default-gateway
   http:
   - match:
     - uri:
         prefix: /
+    rewrite:
+      authority: "localhost:3000"
     route:
     - destination:
         host: openclaw.platform-services.svc.cluster.local

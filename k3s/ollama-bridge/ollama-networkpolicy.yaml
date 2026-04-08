@@ -87,7 +87,6 @@ spec:
 # from accidentally routing traffic here.
 #
 # Place this policy in EACH namespace that should NOT reach Ollama.
-# The kube-system example is shown; replicate for monitoring, librechat, etc.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

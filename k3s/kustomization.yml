@@ -1,0 +1,18 @@
+resources:
+  - launchpad/launchpad.yaml
+  - launchpad/launchpad-config.yaml
+  - home-assistant/home-assistant.yaml
+  - open-webui/open-webui.yaml
+  - searxng/searxng.yaml
+  - whisper/whisper.yaml
+  - kokoro/kokoro.yaml
+  - stable-diffusion/sd-webui.yaml
+  - openclaw/openclaw.yaml
+  - ollama-bridge/ollama-endpoint.yaml
+  - ollama-bridge/ollama-networkpolicy.yaml
+  - ai-rbac/ai-rbac.yaml
+  - ai-rbac/home-assistant-netpol.yaml
+  - ai-rbac/open-webui-netpol.yaml
+  - ai-rbac/sd-webui-netpol.yaml
+  - ai-rbac/searxng-netpol.yaml
+  - ai-rbac/openclaw-netpol.yaml
